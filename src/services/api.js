@@ -16,6 +16,10 @@ export const login = (email, senha) => {
   return api.post('/auth/login', { email, senha });
 }
 
+export const registrar = (nome, email, senha) => {
+  return api.post('/auth/registro', { nome, email, senha })
+}
+
 export const listarTarefas = (status, projetoId) => {
   return api.get('/tarefas', { params: { status, projetoId } })
 }
@@ -34,6 +38,18 @@ export const excluirTarefa = (tarefaId) => {
 
 export const listarProjetos = () => {
   return api.get('/projetos');
+}
+
+export const criarProjeto = (projeto) => {
+  return api.post('/projetos', projeto);
+}
+
+export const atualizarProjeto = (projeto) => {
+  return api.put(`/projetos/${projeto.id}`, projeto);
+}
+
+export const excluirProjeto = (projetoId) => {
+  return api.delete(`/projetos/${projetoId}`);
 }
 
 export default api;
