@@ -1,19 +1,36 @@
-import {useState} from 'react';
-import {atualizarTarefa, criarTarefa} from '../../services/api.js';
-import toast from 'react-hot-toast';
+import {useState} from 'react'
+import {atualizarTarefa, criarTarefa} from '@/services/api.js'
+import {Button} from '@/components/ui/button'
+import {Input} from '@/components/ui/input'
+import {Label} from '@/components/ui/label'
+import {Textarea} from '@/components/ui/textarea'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
+import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog'
+import toast from 'react-hot-toast'
 
-export default function TarefaForm({ tarefa, projetos, onFechar }) {
+const STATUS_LABEL = {
+  PENDENTE: 'Pendente',
+  EM_ANDAMENTO: 'Em andamento',
+  CONCLUIDA: 'Concluída'
+}
+
+export default function TarefaForm({ tarefa, projetos, aberto, onFechar }) {
   const [titulo, setTitulo] = useState(tarefa?.titulo || '')
   const [descricao, setDescricao] = useState(tarefa?.descricao || '')
-  const [projetoId, setProjetoId] = useState(tarefa?.projetoId || '')
   const [status, setStatus] = useState(tarefa?.status || 'PENDENTE')
-  const [erro, setErro] = useState('')
+  const [projetoId, setProjetoId] = useState(
+    tarefa?.projetoId ? String(tarefa.projetoId) : 'NENHUM'
+  )
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setErro('')
     try {
-      const body = { titulo, descricao, projetoId: projetoId || null, status }
+      const body = {
+        titulo,
+        descricao,
+        status,
+        projetoId: projetoId === 'NENHUM' ? null : Number(projetoId)
+      }
       if (tarefa) {
         await atualizarTarefa({ id: tarefa.id, ...body })
       } else {
@@ -23,50 +40,91 @@ export default function TarefaForm({ tarefa, projetos, onFechar }) {
       onFechar()
     } catch {
       toast.error('Erro ao salvar tarefa')
-      setErro('')
     }
   }
 
   return (
-    <div className="form-overlay">
-      <form onSubmit={handleSubmit} className="tarefa-form">
-        <h2>{tarefa ? 'Editar tarefa' : 'Nova tarefa'}</h2>
+    <Dialog open={aberto} onOpenChange={onFechar}>
+      <DialogContent className="bg-[#130F23] border-[#2D2750] text-white">
+        <DialogHeader>
+          <DialogTitle>{tarefa ? 'Editar tarefa' : 'Nova tarefa'}</DialogTitle>
+        </DialogHeader>
 
-        <input
-          placeholder="Título"
-          value={titulo}
-          onChange={e => setTitulo(e.target.value)}
-          required
-        />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-[#E2E2F0]">Título *</Label>
+            <Input
+              placeholder="Ex: Implementar autenticação"
+              value={titulo}
+              onChange={e => setTitulo(e.target.value)}
+              required
+              className="bg-[#0C0818] border-[#2D2750] text-white placeholder:text-[#9490B8]"
+            />
+          </div>
 
-        <textarea
-          placeholder="Descrição (opcional)"
-          value={descricao}
-          onChange={e => setDescricao(e.target.value)}
-        />
+          <div className="space-y-2">
+            <Label className="text-[#E2E2F0]">Descrição</Label>
+            <Textarea
+              placeholder="Descreva a tarefa (opcional)"
+              value={descricao}
+              onChange={e => setDescricao(e.target.value)}
+              className="bg-[#0C0818] border-[#2D2750] text-white placeholder:text-[#9490B8]"
+            />
+          </div>
 
-        {tarefa &&
-          <select value={status} onChange={e => setStatus(e.target.value)}>
-            <option value="PENDENTE">Pendente</option>
-            <option value="EM_ANDAMENTO">Em andamento</option>
-            <option value="CONCLUIDA">Concluída</option>
-          </select>
-        }
-        
-        <select value={projetoId} onChange={e => setProjetoId(e.target.value)}>
-          <option value="">Sem projeto</option>
-          {projetos.map(p => (
-            <option key={p.id} value={p.id}>{p.nome}</option>
-          ))}
-        </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[#E2E2F0]">Status</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="bg-[#0C0818] border-[#2D2750] text-white">
+                  <SelectValue>{STATUS_LABEL[status]}</SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-[#130F23] border-[#2D2750] text-white">
+                  <SelectItem value="PENDENTE">Pendente</SelectItem>
+                  <SelectItem value="EM_ANDAMENTO">Em andamento</SelectItem>
+                  <SelectItem value="CONCLUIDA">Concluída</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        {erro && <p className="erro">{erro}</p>}
+            <div className="space-y-2">
+              <Label className="text-[#E2E2F0]">Projeto</Label>
+              <Select value={projetoId} onValueChange={setProjetoId}>
+                <SelectTrigger className="bg-[#0C0818] border-[#2D2750] text-white">
+                  <SelectValue>
+                    {projetoId === 'NENHUM'
+                      ? 'Sem projeto'
+                      : projetos.find(p => String(p.id) === projetoId)?.nome}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-[#130F23] border-[#2D2750] text-white">
+                  <SelectItem value="NENHUM">Sem projeto</SelectItem>
+                  {projetos.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>{p.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-        <div className="form-acoes">
-          <button type="button" onClick={onFechar}>Cancelar</button>
-          <button type="submit">{tarefa ? 'Salvar' : 'Criar'}</button>
-        </div>
-      </form>
-    </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onFechar}
+              className="text-[#9490B8] hover:text-white hover:bg-[#2D2750]"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              className="bg-[#F97316] hover:bg-[#ea6c0a] text-white font-semibold"
+            >
+              {tarefa ? 'Salvar' : 'Criar tarefa'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
